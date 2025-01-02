@@ -11,6 +11,7 @@ import tagRoutes from './routes/tag.js';
 import categoryRoutes from './routes/category.js';
 import imageRoutes from './routes/image.js';
 import galleryRoutes from './routes/gallery.js';
+import dashboardRoutes from './routes/dashboard.js';
 
 dotenv.config();
 
@@ -28,6 +29,7 @@ app.use('/api/tags', tagRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/images', imageRoutes);
 app.use('/api/gallery', galleryRoutes); // Changed from plural to singular
+app.use('/api/dashboard', dashboardRoutes);
 
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('Connected to MongoDB'))
