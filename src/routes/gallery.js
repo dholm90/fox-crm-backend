@@ -33,6 +33,30 @@ const getOrCreateGallery = async (userId) => {
   }
 };
 
+router.get('/', async (req, res) => {
+  try {
+    const gallery = await Gallery.findOne().populate({
+      path: 'images',
+      select: 'title description url createdAt'
+    });
+
+    if (!gallery) {
+      // Create a new gallery if none exists
+      const newGallery = new Gallery({
+        images: [],
+        lastUpdatedBy: req.userId || null
+      });
+      await newGallery.save();
+      return res.json(newGallery);
+    }
+
+    res.json(gallery);
+  } catch (error) {
+    console.error('Error fetching gallery:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Add image to gallery
 router.post('/images/:imageId', auth, async (req, res) => {
   try {
