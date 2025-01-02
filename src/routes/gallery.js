@@ -7,66 +7,65 @@ const router = express.Router();
 
 // Helper function to get or create gallery with populated images
 const getOrCreateGallery = async (userId) => {
-  let gallery = await Gallery.findOne().populate({
-    path: 'images',
-    select: 'title description url createdAt'
-  });
-  
-  if (!gallery) {
-    gallery = new Gallery({ 
-      images: [],
-      lastUpdatedBy: userId
-    });
-    await gallery.save();
-    gallery = await Gallery.findById(gallery._id).populate({
+  try {
+    let gallery = await Gallery.findOne().populate({
       path: 'images',
       select: 'title description url createdAt'
     });
-  }
-  
-  return gallery;
-};
-
-// Get the gallery
-router.get('/', async (req, res) => {
-  try {
-    const gallery = await getOrCreateGallery(req.userId);
-    console.log('Fetched gallery:', gallery); // Debug log
-    res.json(gallery);
+    
+    if (!gallery) {
+      console.log('Creating new gallery for user:', userId);
+      gallery = new Gallery({ 
+        images: [],
+        lastUpdatedBy: userId
+      });
+      await gallery.save();
+      gallery = await Gallery.findById(gallery._id).populate({
+        path: 'images',
+        select: 'title description url createdAt'
+      });
+    }
+    
+    return gallery;
   } catch (error) {
-    console.error('Gallery fetch error:', error);
-    res.status(500).json({ message: error.message });
+    console.error('Error in getOrCreateGallery:', error);
+    throw error;
   }
-});
+};
 
 // Add image to gallery
 router.post('/images/:imageId', auth, async (req, res) => {
   try {
-    let gallery = await getOrCreateGallery(req.userId);
+    console.log('Adding image to gallery:', req.params.imageId);
     
     // Verify image exists
     const image = await Image.findById(req.params.imageId);
     if (!image) {
+      console.log('Image not found:', req.params.imageId);
       return res.status(404).json({ message: 'Image not found' });
     }
-    
+
+    let gallery = await getOrCreateGallery(req.userId);
+    console.log('Current gallery state:', gallery);
+
+    // Check if image is already in gallery
     if (!gallery.images.includes(req.params.imageId)) {
       gallery.images.push(req.params.imageId);
+      gallery.lastUpdatedBy = req.userId;
+      await gallery.save();
     }
-    gallery.lastUpdatedBy = req.userId;
-    
-    await gallery.save();
-    
-    const populatedGallery = await Gallery.findById(gallery._id)
+
+    // Fetch updated gallery with populated images
+    const updatedGallery = await Gallery.findById(gallery._id)
       .populate({
         path: 'images',
         select: 'title description url createdAt'
       });
-    
-    console.log('Updated gallery:', populatedGallery); // Debug log
-    res.json(populatedGallery);
+
+    console.log('Updated gallery:', updatedGallery);
+    res.json(updatedGallery);
   } catch (error) {
-    console.error('Add image error:', error);
+    console.error('Error adding image to gallery:', error);
     res.status(400).json({ message: error.message });
   }
 });
