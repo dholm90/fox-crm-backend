@@ -1,6 +1,7 @@
 import express from 'express';
 import { auth } from '../middleware/auth.js';
 import Image from '../models/Image.js';
+import Gallery from '../models/Gallery.js';
 import { generateUploadURL, deleteFile } from '../utils/s3.js';
 
 const router = express.Router();
@@ -47,20 +48,6 @@ router.post('/', auth, async (req, res) => {
       uploadedBy: req.userId
     });
     await image.save();
-
-    // After saving the image, try to add it to gallery automatically
-    try {
-      const gallery = await Gallery.findOne();
-      if (gallery) {
-        gallery.images.push(image._id);
-        gallery.lastUpdatedBy = req.userId;
-        await gallery.save();
-      }
-    } catch (galleryError) {
-      console.error('Error adding image to gallery:', galleryError);
-      // Don't fail the image upload if gallery update fails
-    }
-
     res.status(201).json(image);
   } catch (error) {
     console.error('Image creation error:', error);
