@@ -1,30 +1,40 @@
 import express from 'express';
 import { auth } from '../middleware/auth.js';
 import Gallery from '../models/Gallery.js';
+import Image from '../models/Image.js';
 
 const router = express.Router();
+
+// Helper function to get or create gallery with populated images
+const getOrCreateGallery = async (userId) => {
+  let gallery = await Gallery.findOne().populate({
+    path: 'images',
+    select: 'title description url createdAt'
+  });
+  
+  if (!gallery) {
+    gallery = new Gallery({ 
+      images: [],
+      lastUpdatedBy: userId
+    });
+    await gallery.save();
+    gallery = await Gallery.findById(gallery._id).populate({
+      path: 'images',
+      select: 'title description url createdAt'
+    });
+  }
+  
+  return gallery;
+};
 
 // Get the gallery
 router.get('/', async (req, res) => {
   try {
-    const gallery = await Gallery.findOne()
-      .populate({
-        path: 'images',
-        select: 'title description url createdAt'
-      });
-    
-    if (!gallery) {
-      // Create a new gallery if it doesn't exist
-      const newGallery = new Gallery({ 
-        images: [],
-        lastUpdatedBy: req.userId || null 
-      });
-      await newGallery.save();
-      return res.json(newGallery);
-    }
-    
+    const gallery = await getOrCreateGallery(req.userId);
+    console.log('Fetched gallery:', gallery); // Debug log
     res.json(gallery);
   } catch (error) {
+    console.error('Gallery fetch error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -32,19 +42,18 @@ router.get('/', async (req, res) => {
 // Add image to gallery
 router.post('/images/:imageId', auth, async (req, res) => {
   try {
-    let gallery = await Gallery.findOne();
+    let gallery = await getOrCreateGallery(req.userId);
     
-    if (!gallery) {
-      gallery = new Gallery({
-        images: [req.params.imageId],
-        lastUpdatedBy: req.userId
-      });
-    } else {
-      if (!gallery.images.includes(req.params.imageId)) {
-        gallery.images.push(req.params.imageId);
-      }
-      gallery.lastUpdatedBy = req.userId;
+    // Verify image exists
+    const image = await Image.findById(req.params.imageId);
+    if (!image) {
+      return res.status(404).json({ message: 'Image not found' });
     }
+    
+    if (!gallery.images.includes(req.params.imageId)) {
+      gallery.images.push(req.params.imageId);
+    }
+    gallery.lastUpdatedBy = req.userId;
     
     await gallery.save();
     
@@ -54,8 +63,10 @@ router.post('/images/:imageId', auth, async (req, res) => {
         select: 'title description url createdAt'
       });
     
+    console.log('Updated gallery:', populatedGallery); // Debug log
     res.json(populatedGallery);
   } catch (error) {
+    console.error('Add image error:', error);
     res.status(400).json({ message: error.message });
   }
 });
@@ -84,6 +95,7 @@ router.delete('/images/:imageId', auth, async (req, res) => {
     
     res.json(populatedGallery);
   } catch (error) {
+    console.error('Remove image error:', error);
     res.status(400).json({ message: error.message });
   }
 });
@@ -119,6 +131,7 @@ router.put('/reorder', auth, async (req, res) => {
     
     res.json(populatedGallery);
   } catch (error) {
+    console.error('Reorder images error:', error);
     res.status(400).json({ message: error.message });
   }
 });
