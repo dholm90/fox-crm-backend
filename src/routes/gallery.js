@@ -35,6 +35,7 @@ const getOrCreateGallery = async (userId) => {
 
 router.get('/', async (req, res) => {
   try {
+    const { limit } = req.query;
     const gallery = await Gallery.findOne().populate({
       path: 'images',
       select: 'title description url createdAt'

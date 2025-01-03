@@ -7,8 +7,9 @@ const router = express.Router();
 // Get all menu items
 router.get('/', async (req, res) => {
   try {
+    const { limit } = req.query;
     const menuItems = await MenuItem.find().populate(['tags', 'category']);
-    res.json(menuItems);
+    res.json(menuItems.slice(0, limit));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

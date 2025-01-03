@@ -7,8 +7,9 @@ const router = express.Router();
 // Get all events
 router.get('/', async (req, res) => {
   try {
+    const { limit } = req.query;
     const events = await Event.find().sort({ date: 1 });
-    res.json(events);
+    res.json(events.slice(0, limit));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
