@@ -41,7 +41,7 @@ router.use(auth) // Apply auth middleware to all routes below this line
 
 router.get('/', async (req, res) => {
   try {
-    const articles = await Article.find({ author: req.userId })
+    const articles = await Article.find()
       .sort({ createdAt: -1 })
       .populate('author', 'email')
     
