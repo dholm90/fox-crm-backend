@@ -79,8 +79,7 @@ router.post('/', async (req, res) => {
 router.put('/:id/publish', async (req, res) => {
   try {
     const article = await Article.findOne({
-      _id: req.params.id,
-      author: req.userId
+      _id: req.params.id
     })
 
     if (!article) {
@@ -102,8 +101,7 @@ router.get('/:idOrSlug', async (req, res) => {
     const isObjectId = mongoose.Types.ObjectId.isValid(req.params.idOrSlug)
     
     const query = {
-      [isObjectId ? '_id' : 'slug']: req.params.idOrSlug,
-      author: req.userId
+      [isObjectId ? '_id' : 'slug']: req.params.idOrSlug
     }
 
     const article = await Article.findOne(query)
@@ -124,8 +122,7 @@ router.put('/:id', async (req, res) => {
     const { title, excerpt, content, coverImage, published } = req.body
     
     const article = await Article.findOne({
-      _id: req.params.id,
-      author: req.userId
+      _id: req.params.id
     })
 
     if (!article) {
@@ -158,8 +155,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const article = await Article.findOneAndDelete({
-      _id: req.params.id,
-      author: req.userId
+      _id: req.params.id
     })
 
     if (!article) {
